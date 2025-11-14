@@ -3,6 +3,7 @@ Agente IA que realiza un análisis automático para clasificar, resumir y detect
 
 #Estructura de carpetas
 Feedback-Classifier/
+
  ├── app/	Contiene el código fuente del Backend de FastAPI. Aquí va toda la lógica de negocio, endpoints, base de datos y la modularización.
   
  ├── dashboard/	Contiene el código del Frontend o Panel de Visualización. Es donde se construye la interfaz interactiva que muestra los                      insights clasificados por la API.
