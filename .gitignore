@@ -1,0 +1,12 @@
+# Entorno Virtual
+venv/
+__pycache__/
+*.pyc
+
+# Modelos pesados
+model_files/
+*.safetensors
+*.bin
+
+# Sistema
+.DS_Store
