@@ -4,14 +4,12 @@ Agente IA que realiza un análisis automático para clasificar, resumir y detect
 
 ### I. Archivos Raíz
 
-| Archivo/Carpeta |
+| Archivo/Carpeta | Concepto |
 | :--- | :--- |
 | `Feedback-Classifier/` | **Carpeta Raíz.** Contiene todos los módulos y la configuración del proyecto. |
 | `main.py` | **Script de Ejecución Principal.** Punto de entrada para inicializar la API, el entrenamiento o tareas del sistema. |
 | `.gitignore` | **Control de Versiones.** Define los archivos y carpetas que Git debe ignorar (logs, modelos entrenados, claves de entorno). |
 | `README.md` | **Documentación Principal.** Este archivo. |
-
----
 
 ### II. Componentes de la Aplicación 
 
