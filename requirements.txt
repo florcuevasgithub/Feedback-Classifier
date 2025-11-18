@@ -4,4 +4,7 @@ sqlalchemy~=2.0.23
 pydantic~=2.5.3
 
 pandas~=2.1.4
-
+transformers
+torch
+sentencepiece
+protobuf
