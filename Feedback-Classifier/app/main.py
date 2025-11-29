@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-
+from app.routes.feedback_api import router as feedback_router  
+from app.routes.healthcheck import router as health_router 
 
 app = FastAPI(
     title="Agente IA de Análisis de Feedback",

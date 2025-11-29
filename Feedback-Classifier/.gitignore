@@ -1,0 +1,25 @@
+
+# === VARIABLES DE ENTORNO (CRÍTICO) ===
+.env
+.env.*
+*.env
+
+# === ARCHIVOS PESADOS DE ML ===
+model_files/
+temp_model.zip
+*.zip
+
+# === CACHE DE PYTHON ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# === ARCHIVOS TEMPORALES ===
+*_backup.py
+*.tmp
+*.temp
+
+# === IDE/VSCODE ===
+.vscode/
+.idea/
