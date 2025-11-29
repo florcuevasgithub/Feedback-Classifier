@@ -1,0 +1,33 @@
+# === VARIABLES DE ENTORNO ===
+.env
+.env.*
+*.env
+
+# === ARCHIVOS PESADOS DE ML ===
+model_files/
+temp_model.zip
+*.zip
+
+# === CACHE DE PYTHON ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# === ARCHIVOS TEMPORALES ===
+*_backup.py
+*.tmp
+*.temp
+
+# === IDE/VSCODE ===
+.vscode/
+.idea/
+
+# === BASE DE DATOS LOCAL ===
+*.db
+*.sqlite
+*.sqlite3
+
+# === LOGS ===
+*.log
+logs/
