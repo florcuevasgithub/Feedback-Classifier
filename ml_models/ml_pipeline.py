@@ -17,6 +17,7 @@ try:
     from sentimiento import classify_sentiment
     from urgencia import classify_urgency
     from categoria import classify_category
+    from topics import classify_topics
     print("[ML_Pipeline] ¡Todos los especialistas están listos!")
 except ImportError as e:
     print(f"[ML_Pipeline] ERROR: No se pudieron importar los módulos.")
@@ -35,6 +36,7 @@ def analyze_feedback(text: str) -> dict:
     sentiment_result = classify_sentiment(text)
     urgency_result = classify_urgency(text)
     category_result = classify_category(text)
+    topics_result = classify_topics(text)
 
     # Unimos todo
     final_analysis = {
@@ -50,6 +52,10 @@ def analyze_feedback(text: str) -> dict:
             "category": {
                 "label": category_result.get("label"),
                 "score": category_result.get("score")
+            },
+            "topics": {
+                "label": topics_result.get("label"),
+                "score": topics_result.get("score") 
             }
         }
     }
