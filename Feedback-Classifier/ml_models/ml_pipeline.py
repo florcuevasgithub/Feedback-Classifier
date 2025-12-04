@@ -83,3 +83,28 @@ if __name__ == "__main__":
     print("\n--- Test 4 ---")
     analysis_4 = analyze_feedback(test_4)
     print(json.dumps(analysis_4, indent=2, ensure_ascii=False))
+# ✅  Función para verificar estado de modelos ML
+def get_ml_status() -> dict:
+    """Verifica el estado de todos los modelos ML"""
+    from sentimiento import SENTIMENT_CLASSIFIER
+    from categoria import CATEGORY_CLASSIFIER  
+    from urgencia import classify_urgency
+    
+    return {
+        "sentiment_model": {
+            "status": "loaded" if SENTIMENT_CLASSIFIER is not None else "error",
+            "model_name": "cardiffnlp/twitter-xlm-roberta-base-sentiment"
+        },
+        "category_model": {
+            "status": "loaded" if CATEGORY_CLASSIFIER is not None else "error", 
+            "model_path": "local_category_model"
+        },
+        "urgency_model": {
+            "status": "loaded",  # Siempre funciona (reglas)
+            "type": "rule_based"
+        },
+        "pipeline_status": "ready" if all([
+            SENTIMENT_CLASSIFIER is not None,
+            CATEGORY_CLASSIFIER is not None
+        ]) else "partial"
+    }

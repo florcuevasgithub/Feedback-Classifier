@@ -1,0 +1,24 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Solo Streamlit y requests (mínimo)
+RUN pip install --no-cache-dir \
+    streamlit==1.28.0 \
+    requests==2.31.0 \
+    pandas==2.0.3
+
+# Copiar dashboard
+COPY Feedback-Classifier/dashboard/ .
+
+# Variables de entorno (según .gitignore que excluye .env)
+ENV API_URL=http://localhost:8000/api/feedback/submit
+
+EXPOSE 8501
+
+# Comando optimizado para Streamlit
+CMD ["streamlit", "run", "app.py", \
+     "--server.address", "0.0.0.0", \
+     "--server.port", "8501", \
+     "--server.headless", "true", \
+     "--server.runOnSave", "true"]

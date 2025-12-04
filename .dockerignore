@@ -1,0 +1,9 @@
+.git
+.env
+__pycache__/
+*.pyc
+model_files/
+*.zip
+*.log
+.vscode/
+*.db
