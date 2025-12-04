@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     # Base de datos
     DATABASE_URL: str
 
-    # ✅ URLs para modelos ML (Dropbox)
-    MODEL_DOWNLOAD_URL: Optional[str] = "https://www.dropbox.com/scl/fi/your-default-url"
+    # ✅ URL para modelos ML desde Backblaze B2
+    BACKBLAZE_MODEL_URL: str = "https://f005.backblazeb2.com/file/Modelosml/modelo_categoria_final.zip"
     
     class Config:
         env_file = ".env"

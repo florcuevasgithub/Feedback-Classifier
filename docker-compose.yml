@@ -1,16 +1,14 @@
-version: '3.8'
-
-services:
+services:  # ← Empezar directamente aquí
   api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.backblaze
     ports:
       - "8000:8000"
     environment:
       - DATABASE_URL=sqlite:///./feedback.db
     volumes:
-      - model_cache:/app/model_files
+      - model_cache:/app/model_files  # ← CACHE PERSISTENTE
 
   dashboard:
     build:
@@ -24,4 +22,4 @@ services:
       - api
 
 volumes:
-  model_cache:
+  model_cache:  # ← MODELOS SE GUARDAN AQUÍ

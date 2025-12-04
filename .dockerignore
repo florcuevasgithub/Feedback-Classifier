@@ -2,7 +2,7 @@
 .env
 __pycache__/
 *.pyc
-model_files/
+#model_files/
 *.zip
 *.log
 .vscode/

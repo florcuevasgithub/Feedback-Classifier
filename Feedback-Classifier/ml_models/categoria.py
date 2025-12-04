@@ -5,6 +5,7 @@ import requests
 import zipfile
 from pathlib import Path
 from dotenv import load_dotenv
+from ..config.settings import settings 
 
 load_dotenv()
 
@@ -31,7 +32,7 @@ def download_model_if_needed():
     print("[ML_Category] 📦 Descargando modelo desde Backblaze B2...")
     
     # TU URL REAL DE BACKBLAZE B2
-    BACKBLAZE_URL = "https://f005.backblazeb2.com/file/Modelosml/modelo_categoria_final.zip"
+    BACKBLAZE_URL = settings.BACKBLAZE_MODEL_URL
     
     try:
         Path(MODEL_PATH_CATEGORY).parent.mkdir(parents=True, exist_ok=True)

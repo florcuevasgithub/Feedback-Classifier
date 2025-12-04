@@ -2,56 +2,34 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Herramientas del sistema
-RUN apt-get update && apt-get install -y \
-    curl unzip && \
-    rm -rf /var/lib/apt/lists/* && \
-    apt-get clean
+# Sistema básico
+RUN apt-get update && apt-get install -y curl unzip && \
+    rm -rf /var/lib/apt/lists/* && apt-get clean
 
-# Dependencias básicas (según requirements.txt del RAG)
+# Dependencias básicas
 RUN pip install --no-cache-dir \
     fastapi uvicorn sqlalchemy pydantic pydantic-settings \
     python-dotenv requests
 
-# Copiar TU código existente (NO cambiar nada)
+# ✅ VERSIONES COMPATIBLES FIJADAS
+RUN pip install --no-cache-dir \
+    "numpy<2.0" \
+    torch==2.1.0+cpu --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir \
+    "transformers>=4.30.0,<4.36.0" \
+    "pandas>=1.5.0,<2.0.0" \
+    "scikit-learn>=1.3.0,<1.4.0"
+
+# Código
 COPY Feedback-Classifier/app/ ./app/
 COPY Feedback-Classifier/ml_models/ ./ml_models/
 
-# Script para Backblaze B2 (respeta tu .gitignore)
-RUN cat > /entrypoint.sh << 'SCRIPT'
-#!/bin/bash
-set -e
+# Directorio para modelos
+RUN mkdir -p model_files
 
-echo "🚀 Iniciando con Backblaze B2..."
-
-# Instalar ML optimizado
-pip install --no-cache-dir \
-    torch==2.1.0+cpu --index-url https://download.pytorch.org/whl/cpu \
-    transformers pandas scikit-learn
-
-# Crear model_files/ (según tu .gitignore)
-mkdir -p model_files
-
-# Descargar TU modelo desde Backblaze B2
-BACKBLAZE_URL="https://f005.backblazeb2.com/file/Modelosml/modelo_categoria_final.zip"
-echo "📥 Descargando tu modelo (404.6MB) desde Backblaze..."
-
-curl -L --fail --retry 3 \
-    -o /tmp/model.zip \
-    "$BACKBLAZE_URL" && \
-unzip -q /tmp/model.zip -d model_files/ && \
-rm /tmp/model.zip && \
-echo "✅ Tu modelo listo en model_files/"
-
-exec "$@"
-SCRIPT
-
-RUN chmod +x /entrypoint.sh
-
+# Configuración
 ENV DATABASE_URL=sqlite:///./feedback.db
 ENV PYTHONPATH=/app
 
 EXPOSE 8000
-
-ENTRYPOINT ["/entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

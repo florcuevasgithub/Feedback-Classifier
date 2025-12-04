@@ -2,23 +2,26 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Solo Streamlit y requests (mínimo)
-RUN pip install --no-cache-dir \
-    streamlit==1.28.0 \
-    requests==2.31.0 \
-    pandas==2.0.3
+# Sistema básico
+RUN apt-get update && apt-get install -y curl unzip && \
+    rm -rf /var/lib/apt/lists/* && apt-get clean
 
-# Copiar dashboard
-COPY Feedback-Classifier/dashboard/ .
+# ✅ USAR requirements.txt con versiones fijadas
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt \
+    --index-url https://download.pytorch.org/whl/cpu \
+    --extra-index-url https://pypi.org/simple
 
-# Variables de entorno (según .gitignore que excluye .env)
-ENV API_URL=http://localhost:8000/api/feedback/submit
+# Código
+COPY Feedback-Classifier/app/ ./app/
+COPY Feedback-Classifier/ml_models/ ./ml_models/
 
-EXPOSE 8501
+# Directorio para modelos
+RUN mkdir -p model_files
 
-# Comando optimizado para Streamlit
-CMD ["streamlit", "run", "app.py", \
-     "--server.address", "0.0.0.0", \
-     "--server.port", "8501", \
-     "--server.headless", "true", \
-     "--server.runOnSave", "true"]
+# Configuración
+ENV DATABASE_URL=sqlite:///./feedback.db
+ENV PYTHONPATH=/app
+
+EXPOSE 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
