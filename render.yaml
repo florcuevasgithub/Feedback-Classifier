@@ -1,0 +1,36 @@
+services:
+  # API Principal (FastAPI)
+  - type: web
+    name: feedback-classifier-api
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+    startCommand: |
+      cd Feedback-Classifier && 
+      uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./feedback.db
+      - key: PYTHONPATH
+        value: /opt/render/project/src/Feedback-Classifier
+      - key: ENVIRONMENT
+        value: production
+    
+  # Dashboard (Streamlit) - OPCIONAL
+  - type: web
+    name: feedback-classifier-dashboard
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+    startCommand: |
+      cd Feedback-Classifier && 
+      streamlit run dashboard/app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    envVars:
+      - key: API_URL
+        value: https://feedback-classifier-api.onrender.com
+      - key: PYTHONPATH
+        value: /opt/render/project/src/Feedback-Classifier
