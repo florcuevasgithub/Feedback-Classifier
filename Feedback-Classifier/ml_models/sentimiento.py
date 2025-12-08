@@ -39,13 +39,18 @@ def load_sentiment_model():
         print(f"[ML_Sentiment] Usando dispositivo: {device_name}")
         
         SENTIMENT_CLASSIFIER = pipeline(
-            task="sentiment-analysis",
-            model=MODEL_NAME,
-            device=device,
-            return_all_scores=False,
-            truncation=True,
-            max_length=512
-        )
+        task="sentiment-analysis",
+        model=MODEL_NAME,
+        device=-1,                     # ✅ Forzar CPU
+        torch_dtype=torch.float16,     # ✅ SOLO ESTA LÍNEA
+        model_kwargs={                 # ✅ SOLO ESTE BLOQUE
+        "low_cpu_mem_usage": True,
+        "use_cache": False
+},
+    return_all_scores=False,
+    truncation=True,
+    max_length=512
+)
         
         # Prueba rápida para verificar que funciona
         test_result = SENTIMENT_CLASSIFIER("test")
