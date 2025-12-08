@@ -5,7 +5,7 @@ from app.config.db import Base
 class Feedback(Base):
     __tablename__ = "feedback"
 
-    id = Column(BigInteger, primary_key=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)  
     source_id = Column(Integer, nullable=False)
     external_id = Column(String)
     channel = Column(String)
@@ -19,5 +19,5 @@ class Feedback(Base):
     category_label = Column(String)
     category_score = Column(Float)
     is_training_sample = Column(Boolean, default=False)
-    extra_metadata = Column(JSON)  # <-- Correción
+    extra_metadata = Column(JSON)
     created_by = Column(BigInteger)
