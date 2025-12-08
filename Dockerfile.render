@@ -2,11 +2,15 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Sistema básico
-RUN apt-get update && apt-get install -y curl unzip && \
-    rm -rf /var/lib/apt/lists/* && apt-get clean
+# Sistema básico + build tools para compilar torch
+RUN apt-get update && apt-get install -y \
+    curl \
+    unzip \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
-# SOLO dependencias esenciales (SIN transformers/torch pesados)
+# ✅ DEPENDENCIAS CORE (FastAPI)
 RUN pip install --no-cache-dir \
     fastapi==0.124.0 \
     uvicorn==0.38.0 \
@@ -16,10 +20,19 @@ RUN pip install --no-cache-dir \
     python-dotenv==1.2.1 \
     requests==2.32.5
 
-# Dependencias básicas para ML mock
+# ✅ DEPENDENCIAS ML BÁSICAS
 RUN pip install --no-cache-dir \
     "numpy<2.0" \
     "scikit-learn>=1.3.0,<1.4.0"
+
+# ✅ TORCH + TRANSFORMERS (CPU-only para cuantización)
+RUN pip install --no-cache-dir \
+    torch==2.0.1+cpu \
+    -f https://download.pytorch.org/whl/torch_stable.html
+
+RUN pip install --no-cache-dir \
+    transformers==4.35.2 \
+    tokenizers==0.15.0
 
 # Código (respeta .dockerignore automáticamente)
 COPY Feedback-Classifier/app/ ./app/
@@ -28,13 +41,11 @@ COPY Feedback-Classifier/ml_models/ ./ml_models/
 # Directorio para modelos
 RUN mkdir -p model_files
 
-# CONFIGURACIÓN OPTIMIZADA para Render Free
+# ✅ CONFIGURACIÓN PARA MODELOS CUANTIZADOS
 ENV DATABASE_URL=sqlite:///./feedback.db
 ENV PYTHONPATH=/app
-ENV SKIP_MODEL_DOWNLOAD=true
-ENV DISABLE_ML_MODELS=true
-ENV ML_FALLBACK_MODE=true
-ENV RENDER_FREE_MODE=true
+ENV USE_QUANTIZED_MODELS=true
+ENV BACKBLAZE_MODEL_URL=https://your-backblaze-url-here.zip
 
 EXPOSE 8000
 
