@@ -1,0 +1,35 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Limpiar cache y optimizar
+RUN apt-get update && apt-get install -y curl unzip && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get clean
+
+# INSTALAR SOLO LO MÍNIMO NECESARIO
+RUN pip install --no-cache-dir \
+    fastapi==0.104.1 \
+    uvicorn==0.24.0 \
+    sqlalchemy==2.0.23 \
+    pydantic==2.4.2 \
+    pydantic-settings==2.0.3 \
+    python-dotenv==1.0.0
+
+# ML ligero (SIN transformers pesados)
+RUN pip install --no-cache-dir \
+    "numpy<2.0" \
+    "pandas>=1.5.0,<2.0.0" \
+    "scikit-learn>=1.3.0,<1.4.0"
+
+# Código
+COPY Feedback-Classifier/app/ ./app/
+COPY Feedback-Classifier/ml_models/ ./ml_models/
+
+# Configuración
+ENV DATABASE_URL=sqlite:///./feedback.db
+ENV PYTHONPATH=/app
+ENV SKIP_MODEL_DOWNLOAD=true
+
+EXPOSE 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
