@@ -83,23 +83,23 @@ def download_model_if_needed():
 # Descargar modelo
 download_success = download_model_if_needed()
 
-# Cargar modelo (resto igual)
+# ✅ CARGAR MODELO CON CUANTIZACIÓN - INDENTACIÓN CORREGIDA
 try:
     if download_success:
         print(f"[ML_Category] Cargando desde: {MODEL_PATH_CATEGORY}")
         model = AutoModelForSequenceClassification.from_pretrained(
-        MODEL_PATH_CATEGORY,
-        torch_dtype=torch.int8,        # ✅ SOLO ESTA LÍNEA
-        device_map="cpu",              # ✅ SOLO ESTA LÍNEA  
-        low_cpu_mem_usage=True         # ✅ SOLO ESTA LÍNEA
- )
- tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH_CATEGORY)
+            MODEL_PATH_CATEGORY,
+            torch_dtype=torch.int8,        # ✅ Cuantización int8
+            device_map="cpu",              # ✅ Forzar CPU
+            low_cpu_mem_usage=True         # ✅ Menos memoria
+        )
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH_CATEGORY)
 
-CATEGORY_CLASSIFIER = pipeline(
-    task="text-classification",
-    model=model,
-    tokenizer=tokenizer
-)
+        CATEGORY_CLASSIFIER = pipeline(
+            task="text-classification",
+            model=model,
+            tokenizer=tokenizer
+        )
         print("[ML_Category] ¡Modelo cargado desde Backblaze B2!")
     else:
         raise Exception("Falló descarga desde Backblaze B2")
