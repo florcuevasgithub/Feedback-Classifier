@@ -1,35 +1,49 @@
 FROM python:3.11-slim
 
+# Configurar directorio de trabajo
 WORKDIR /app
 
-# Limpiar cache y optimizar
-RUN apt-get update && apt-get install -y curl unzip && \
-    rm -rf /var/lib/apt/lists/* && \
-    apt-get clean
+# Instalar utilidades del sistema
+RUN apt-get update && apt-get install -y \
+    curl \
+    unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
-# INSTALAR SOLO LO MÍNIMO NECESARIO
+# ✅ DEPENDENCIAS CORE (FastAPI + Database)
 RUN pip install --no-cache-dir \
-    fastapi==0.104.1 \
-    uvicorn==0.24.0 \
-    sqlalchemy==2.0.23 \
-    pydantic==2.4.2 \
-    pydantic-settings==2.0.3 \
-    python-dotenv==1.0.0
+    fastapi==0.124.0 \
+    uvicorn==0.38.0 \
+    sqlalchemy==2.0.44 \
+    pydantic==2.12.5 \
+    pydantic-settings==2.12.0 \
+    python-dotenv==1.2.1 \
+    requests==2.32.5
 
-# ML ligero (SIN transformers pesados)
+# ✅ DEPENDENCIAS ML BÁSICAS (solo para funciones LITE)
 RUN pip install --no-cache-dir \
     "numpy<2.0" \
-    "pandas>=1.5.0,<2.0.0" \
     "scikit-learn>=1.3.0,<1.4.0"
 
-# Código
+# ✅ NO INSTALAR torch/transformers (usaremos Hugging Face API)
+# Esto ahorra ~400 MB de espacio y memoria
+
+# Copiar código fuente
 COPY Feedback-Classifier/app/ ./app/
 COPY Feedback-Classifier/ml_models/ ./ml_models/
 
-# Configuración
+# Crear directorio para cache (opcional, para futuras expansiones)
+RUN mkdir -p model_files
+
+# ✅ VARIABLES DE ENTORNO para Hugging Face API
 ENV DATABASE_URL=sqlite:///./feedback.db
 ENV PYTHONPATH=/app
-ENV SKIP_MODEL_DOWNLOAD=true
+ENV USE_HUGGINGFACE_API=true
+ENV USE_LITE_MODE=false
+ENV HUGGINGFACE_API_KEY=""
 
+# Exponer puerto
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+
+# ✅ COMANDO optimizado para memoria (1 worker)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--timeout-keep-alive", "30"]
