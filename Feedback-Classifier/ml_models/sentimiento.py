@@ -2,6 +2,12 @@ from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassifica
 import torch
 import warnings
 import logging
+import sys
+import os
+
+# Agregar el directorio padre al path para imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from app.config.settings import settings
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -10,108 +16,75 @@ logger = logging.getLogger(__name__)
 # Suprimir warnings de transformers
 warnings.filterwarnings("ignore", category=UserWarning, module="transformers")
 
-# 1. EL MODELO POLÍGLOTA (XLM-RoBERTa)
-MODEL_NAME = "cardiffnlp/twitter-xlm-roberta-base-sentiment"
+# ✅ CONFIGURACIÓN DESDE SETTINGS
+MODEL_NAME = settings.HF_SENTIMENT_MODEL
+FORCE_CPU = settings.FORCE_CPU
+MAX_LENGTH = settings.MAX_TEXT_LENGTH
 
-# 2. MAPEAMOS LAS ETIQUETAS
+# ✅ MAPEAMOS LAS ETIQUETAS
 LABEL_MAP = {
     "negative": "NEG",
     "neutral": "NEU", 
-    "positive": "POS"
+    "positive": "POS",
+    "label_0": "NEG",
+    "label_1": "NEU",
+    "label_2": "POS"
 }
 
-# 3. CARGAMOS EL MODELO UNA SOLA VEZ (VERSION MEJORADA)
-print(f"[ML_Sentiment] Cargando modelo políglota '{MODEL_NAME}'...")
+# ✅ VARIABLE GLOBAL DEL CLASIFICADOR
 SENTIMENT_CLASSIFIER = None
 
 def load_sentiment_model():
-    """Carga el modelo de sentiment con manejo robusto de errores"""
+    """Carga el modelo de sentiment con configuración robusta"""
     global SENTIMENT_CLASSIFIER
     
     try:
-        # ✅ Método 1: Cargar con pipeline (más simple)
-        print("[ML_Sentiment] Intentando cargar con pipeline...")
+        print(f"[ML_Sentiment] Cargando modelo: {MODEL_NAME}")
         
-        # Detectar dispositivo disponible
-        device = 0 if torch.cuda.is_available() else -1
-        device_name = "GPU" if device >= 0 else "CPU"
+        # ✅ CONFIGURACIÓN DE DISPOSITIVO
+        if FORCE_CPU or not torch.cuda.is_available():
+            device = -1
+            device_name = "CPU"
+        else:
+            device = 0
+            device_name = "GPU"
         
         print(f"[ML_Sentiment] Usando dispositivo: {device_name}")
         
-        SENTIMENT_CLASSIFIER = pipeline(
-        task="sentiment-analysis",
-        model=MODEL_NAME,
-        device=-1,                     # ✅ Forzar CPU
-        torch_dtype=torch.float16,     # ✅ SOLO ESTA LÍNEA
-        model_kwargs={                 # ✅ SOLO ESTE BLOQUE
-        "low_cpu_mem_usage": True,
-        "use_cache": False
-},
-    return_all_scores=False,
-    truncation=True,
-    max_length=512
-)
+        # ✅ CONFIGURACIÓN OPTIMIZADA
+        model_kwargs = {
+            "low_cpu_mem_usage": True,
+            "use_cache": False
+        }
         
-        # Prueba rápida para verificar que funciona
+        if settings.ENABLE_QUANTIZATION and device == -1:
+            model_kwargs["torch_dtype"] = torch.float16
+        
+        # ✅ CARGAR CON PIPELINE OPTIMIZADO
+        SENTIMENT_CLASSIFIER = pipeline(
+            task="sentiment-analysis",
+            model=MODEL_NAME,
+            device=device,
+            model_kwargs=model_kwargs,
+            return_all_scores=False,
+            truncation=True,
+            max_length=MAX_LENGTH
+        )
+        
+        # ✅ PRUEBA DE FUNCIONAMIENTO
         test_result = SENTIMENT_CLASSIFIER("test")
-        print(f"[ML_Sentiment] ✅ Modelo cargado exitosamente en {device_name}")
-        print(f"[ML_Sentiment] Prueba: {test_result}")
+        logger.info(f"[ML_Sentiment] ✅ Modelo cargado exitosamente en {device_name}")
+        logger.info(f"[ML_Sentiment] Prueba: {test_result}")
         return True
         
-    except Exception as e1:
-        print(f"[ML_Sentiment] ❌ Error con pipeline: {e1}")
+    except Exception as e:
+        logger.error(f"[ML_Sentiment] ❌ Error cargando modelo: {e}")
         
-        try:
-            # ✅ Método 2: Cargar manualmente (más control)
-            print("[ML_Sentiment] Intentando carga manual...")
-            
-            tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-            model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
-            
-            # Mover a dispositivo apropiado
-            if torch.cuda.is_available():
-                model = model.to('cuda')
-                device = 0
-            else:
-                device = -1
-            
-            SENTIMENT_CLASSIFIER = pipeline(
-                task="sentiment-analysis",
-                model=model,
-                tokenizer=tokenizer,
-                device=device,
-                return_all_scores=False
-            )
-            
-            print("[ML_Sentiment] ✅ Modelo cargado manualmente")
-            return True
-            
-        except Exception as e2:
-            print(f"[ML_Sentiment] ❌ Error carga manual: {e2}")
-            
-            try:
-                # ✅ Método 3: Fallback simple (solo CPU, sin optimizaciones)
-                print("[ML_Sentiment] Intentando fallback básico...")
-                
-                SENTIMENT_CLASSIFIER = pipeline(
-                    task="sentiment-analysis",
-                    model=MODEL_NAME,
-                    device=-1  # Forzar CPU
-                )
-                
-                print("[ML_Sentiment] ✅ Modelo cargado en fallback (CPU)")
-                return True
-                
-            except Exception as e3:
-                print(f"[ML_Sentiment] ❌ Error total: {e3}")
-                print("[ML_Sentiment] ⚠️  Usando modelo mock para desarrollo")
-                SENTIMENT_CLASSIFIER = None
-                return False
+        # ✅ FALLBACK A CLASIFICADOR MOCK
+        logger.warning("[ML_Sentiment] ⚠️ Usando clasificador mock")
+        SENTIMENT_CLASSIFIER = None
+        return False
 
-# Cargar el modelo al importar
-load_success = load_sentiment_model()
-
-# 4. LA FUNCIÓN CLASIFICADORA (VERSION MEJORADA)
 def classify_sentiment(text: str) -> dict:
     """
     Clasifica el sentimiento de un texto (inglés o español).
@@ -120,99 +93,106 @@ def classify_sentiment(text: str) -> dict:
         text (str): El feedback del cliente.
 
     Returns:
-        dict: Un diccionario con 'label' y 'score'.
-              Etiquetas posibles: 'POS', 'NEG', 'NEU'.
+        dict: Un diccionario con 'label', 'score' y 'source'.
     """
-    # Validación de entrada
+    # ✅ VALIDACIÓN DE ENTRADA
     if not text or not isinstance(text, str):
-        return {"label": "ERROR_INVALID_INPUT", "score": 0.0}
+        return {"label": "NEU", "score": 0.5, "source": "default"}
     
-    # Limpiar texto
+    # ✅ LIMPIEZA Y TRUNCADO
     text = text.strip()
     if len(text) == 0:
-        return {"label": "ERROR_EMPTY_TEXT", "score": 0.0}
+        return {"label": "NEU", "score": 0.5, "source": "default"}
     
-    # Si el modelo no está cargado, usar mock
-    if SENTIMENT_CLASSIFIER is None:
-        print("[ML_Sentiment] ⚠️ Usando clasificación mock (modelo no disponible)")
-        return mock_sentiment_classification(text)
-
-    try:
-        # Limitar longitud del texto
-        if len(text) > 512:
-            text = text[:512]
+    if len(text) > MAX_LENGTH:
+        text = text[:MAX_LENGTH]
+    
+    # ✅ USAR MODELO HUGGING FACE SI ESTÁ DISPONIBLE
+    if SENTIMENT_CLASSIFIER is not None:
+        try:
+            result_raw = SENTIMENT_CLASSIFIER(text)
             
-        # 1. Obtenemos el resultado del modelo
-        result_raw = SENTIMENT_CLASSIFIER(text)
-        
-        # Manejar diferentes formatos de respuesta
-        if isinstance(result_raw, list) and len(result_raw) > 0:
-            result = result_raw[0]
-        else:
-            result = result_raw
+            # ✅ MANEJAR DIFERENTES FORMATOS DE RESPUESTA
+            if isinstance(result_raw, list) and len(result_raw) > 0:
+                result = result_raw[0]
+            else:
+                result = result_raw
 
-        # 2. "Traducimos" la etiqueta
-        original_label = result.get('label', 'unknown').lower()
-        clean_label = LABEL_MAP.get(original_label, "NEU")  # Default a neutral
+            # ✅ MAPEAR ETIQUETAS
+            original_label = result.get('label', 'neutral').lower()
+            clean_label = LABEL_MAP.get(original_label, "NEU")
 
-        # 3. Devolvemos el diccionario limpio
-        return {
-            "label": clean_label,
-            "score": round(result.get('score', 0.5), 4)
-        }
+            return {
+                "label": clean_label,
+                "score": round(result.get('score', 0.5), 4),
+                "source": "huggingface_local"
+            }
 
-    except Exception as e:
-        print(f"[ML_Sentiment] Error al clasificar: {e}")
-        return {"label": "ERROR_CLASSIFICATION", "score": 0.0}
+        except Exception as e:
+            logger.error(f"[ML_Sentiment] Error al clasificar: {e}")
+            return mock_sentiment_classification(text)
+    
+    # ✅ FALLBACK A MOCK
+    return mock_sentiment_classification(text)
 
-# 5. CLASIFICADOR MOCK (para desarrollo/fallback)
 def mock_sentiment_classification(text: str) -> dict:
-    """Clasificador básico usando palabras clave para desarrollo"""
+    """Clasificador básico usando palabras clave mejoradas"""
     text_lower = text.lower()
     
-    # Palabras positivas
-    positive_words = ['excelente', 'bueno', 'genial', 'perfecto', 'amazing', 'great', 'good', 'love', 'excellent']
-    # Palabras negativas  
-    negative_words = ['malo', 'terrible', 'horrible', 'odio', 'bad', 'awful', 'hate', 'terrible', 'worst']
-    
-    positive_score = sum(1 for word in positive_words if word in text_lower)
-    negative_score = sum(1 for word in negative_words if word in text_lower)
-    
-    if positive_score > negative_score:
-        return {"label": "POS", "score": 0.7}
-    elif negative_score > positive_score:
-        return {"label": "NEG", "score": 0.7}
-    else:
-        return {"label": "NEU", "score": 0.6}
-
-# 6. FUNCIÓN DE ESTADO
-def get_sentiment_status() -> dict:
-    """Retorna el estado del modelo de sentiment"""
-    return {
-        "model_name": MODEL_NAME,
-        "status": "loaded" if SENTIMENT_CLASSIFIER is not None else "error",
-        "device": "cuda" if torch.cuda.is_available() and SENTIMENT_CLASSIFIER is not None else "cpu",
-        "fallback_active": SENTIMENT_CLASSIFIER is None
-    }
-
-# 7. PRUEBA RÁPIDA
-if __name__ == "__main__":
-    print("\n--- PRUEBA DE SENTIMIENTO (POLÍGLOTA) ---")
-    
-    # Mostrar estado
-    status = get_sentiment_status()
-    print(f"Estado del modelo: {status}")
-    
-    # Pruebas
-    tests = [
-        "Esto es maravilloso y excelente!",
-        "This is wonderful and amazing!",
-        "Esto es horrible y terrible",
-        "This is awful and bad",
-        "Texto neutral sin emociones específicas"
+    # ✅ PALABRAS POSITIVAS EXPANDIDAS (español + inglés)
+    positive_words = [
+        # Español
+        'excelente', 'bueno', 'genial', 'perfecto', 'increíble', 'fantástico', 
+        'maravilloso', 'feliz', 'contento', 'satisfecho', 'encantado', 'amor', 
+        'amar', 'gustar', 'me gusta', 'recomiendo', 'rápido', 'eficiente', 
+        'útil', 'fácil', 'cómodo', 'hermoso', 'mejor', 'éxito', 'ganador',
+        # Inglés
+        'excellent', 'good', 'great', 'perfect', 'amazing', 'fantastic', 
+        'wonderful', 'happy', 'satisfied', 'love', 'like', 'recommend', 
+        'fast', 'efficient', 'useful', 'easy', 'comfortable', 'beautiful', 
+        'best', 'success', 'winner', 'awesome', 'brilliant', 'outstanding'
     ]
     
-    for test_text in tests:
-        result = classify_sentiment(test_text)
-        print(f"Texto: '{test_text}'")
-        print(f"Resultado: {result}\n")
+    # ✅ PALABRAS NEGATIVAS EXPANDIDAS (español + inglés)
+    negative_words = [
+        # Español
+        'malo', 'terrible', 'horrible', 'pésimo', 'odio', 'odiar', 'detesto', 
+        'molesto', 'enojado', 'frustrado', 'problema', 'error', 'falla', 
+        'lento', 'difícil', 'complicado', 'caro', 'costoso', 'peor', 
+        'decepcionante', 'inútil', 'basura', 'no funciona', 'roto',
+        # Inglés
+        'bad', 'terrible', 'horrible', 'awful', 'hate', 'angry', 'frustrated', 
+        'problem', 'error', 'bug', 'slow', 'difficult', 'expensive', 'worst', 
+        'disappointing', 'useless', 'trash', 'broken', 'failed', 'sucks',
+        'annoying', 'confusing', 'complicated'
+    ]
+    
+    # ✅ CONTADORES
+    positive_count = sum(1 for word in positive_words if word in text_lower)
+    negative_count = sum(1 for word in negative_words if word in text_lower)
+    
+    # ✅ LÓGICA DE CLASIFICACIÓN
+    if positive_count > negative_count:
+        confidence = min(0.6 + (positive_count * 0.1), 0.95)
+        return {"label": "POS", "score": confidence, "source": "mock_keywords"}
+    elif negative_count > positive_count:
+        confidence = min(0.6 + (negative_count * 0.1), 0.95)
+        return {"label": "NEG", "score": confidence, "source": "mock_keywords"}
+    else:
+        return {"label": "NEU", "score": 0.5, "source": "mock_default"}
+
+# ✅ FUNCIÓN AUXILIAR PARA INICIALIZACIÓN
+def initialize_sentiment_model():
+    """Inicializa el modelo de sentimiento al importar el módulo"""
+    try:
+        success = load_sentiment_model()
+        if success:
+            logger.info("[ML_Sentiment] ✅ Modelo inicializado correctamente")
+        else:
+            logger.warning("[ML_Sentiment] ⚠️ Usando modo fallback")
+    except Exception as e:
+        logger.error(f"[ML_Sentiment] ❌ Error en inicialización: {e}")
+
+# ✅ AUTO-INICIALIZACIÓN DEL MODELO
+if __name__ != "__main__":
+    initialize_sentiment_model()
