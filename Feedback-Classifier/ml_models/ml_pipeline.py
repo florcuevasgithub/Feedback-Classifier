@@ -13,13 +13,13 @@ print(f"[ML_Pipeline] 🚀 Render Free Mode: {RENDER_FREE_MODE}")
 print(f"[ML_Pipeline] 🔧 Use Quantized Models: {USE_QUANTIZED_MODELS}")
 print(f"[ML_Pipeline] 🚫 ML Models Disabled: {DISABLE_ML_MODELS}")
 
-# ✅ CAMBIO: Nueva lógica para usar modelos cuantizados
+# ✅ CAMBIO: Nueva lógica para usar modelos cuantizados CON IMPORTS RELATIVOS
 if USE_QUANTIZED_MODELS:
     print("[ML_Pipeline] Cargando especialistas CUANTIZADOS...")
     try:
-        from sentimiento import classify_sentiment
-        from urgencia import classify_urgency  
-        from categoria import classify_category
+        from .sentimiento import classify_sentiment  # ✅ IMPORT RELATIVO CORREGIDO
+        from .urgencia import classify_urgency      # ✅ IMPORT RELATIVO CORREGIDO
+        from .categoria import classify_category    # ✅ IMPORT RELATIVO CORREGIDO
         print("[ML_Pipeline] ✅ Especialistas CUANTIZADOS cargados correctamente")
         
     except ImportError as e:
@@ -28,11 +28,12 @@ if USE_QUANTIZED_MODELS:
         
         # Funciones LITE como fallback
         def classify_sentiment(text: str) -> dict:
+            """Clasificador de sentimiento LITE usando palabras clave"""
             if not text: return {"label": "NEU", "score": 0.5}
             text_lower = text.lower()
             
-            pos_words = ['excelente', 'bueno', 'perfecto', 'amor', 'genial', 'great', 'excellent', 'amazing', 'love']
-            neg_words = ['malo', 'horrible', 'terrible', 'odio', 'pésimo', 'bad', 'awful', 'hate', 'worst']
+            pos_words = ['excelente', 'bueno', 'perfecto', 'amor', 'genial', 'fantastic', 'great', 'excellent', 'amazing', 'love', 'wonderful']
+            neg_words = ['malo', 'horrible', 'terrible', 'odio', 'pésimo', 'awful', 'bad', 'hate', 'worst', 'disgusting']
             
             pos_count = sum(1 for word in pos_words if word in text_lower)
             neg_count = sum(1 for word in neg_words if word in text_lower)
@@ -45,25 +46,31 @@ if USE_QUANTIZED_MODELS:
                 return {"label": "NEU", "score": 0.6}
 
         def classify_category(text: str) -> dict:
+            """Clasificador de categoría LITE usando palabras clave"""
             if not text: return {"label": "General/Otro", "score": 0.5}
             text_lower = text.lower()
             
-            if any(word in text_lower for word in ['login', 'contraseña', 'error', 'problema', 'no funciona']):
+            # Soporte Técnico
+            if any(word in text_lower for word in ['login', 'contraseña', 'error', 'problema', 'no funciona', 'falla', 'bug']):
                 return {"label": "Soporte Técnico", "score": 0.8}
-            elif any(word in text_lower for word in ['envío', 'entrega', 'delivery', 'llegó']):
+            # Logística/Envíos
+            elif any(word in text_lower for word in ['envío', 'entrega', 'delivery', 'llegó', 'repartidor', 'shipping']):
                 return {"label": "Logística/Envíos", "score": 0.8}
-            elif any(word in text_lower for word in ['factura', 'pago', 'cobro', 'dinero', 'precio']):
+            # Facturación y Pagos
+            elif any(word in text_lower for word in ['factura', 'pago', 'cobro', 'dinero', 'precio', 'billing', 'payment']):
                 return {"label": "Facturación y Pagos", "score": 0.8}
-            elif any(word in text_lower for word in ['producto', 'calidad', 'sugerencia', 'mejora']):
+            # Producto/Sugerencias
+            elif any(word in text_lower for word in ['producto', 'calidad', 'sugerencia', 'mejora', 'feature', 'quality']):
                 return {"label": "Producto/Sugerencias", "score": 0.8}
             else:
                 return {"label": "General/Otro", "score": 0.6}
 
         def classify_urgency(text: str) -> str:
+            """Clasificador de urgencia LITE usando palabras clave"""
             if not text: return "Normal"
             text_lower = text.lower()
             
-            urgent_words = ['urgente', 'emergency', 'inmediato', 'ya', 'ahora', 'grave']
+            urgent_words = ['urgente', 'emergency', 'inmediato', 'ya', 'ahora', 'grave', 'critical', 'asap']
             return "Alta" if any(word in text_lower for word in urgent_words) else "Normal"
         
         print("[ML_Pipeline] ✅ Fallback LITE activado")
@@ -74,11 +81,12 @@ else:
     
     # Funciones ligeras integradas
     def classify_sentiment(text: str) -> dict:
+        """Clasificador de sentimiento LITE usando palabras clave"""
         if not text: return {"label": "NEU", "score": 0.5}
         text_lower = text.lower()
         
-        pos_words = ['excelente', 'bueno', 'perfecto', 'amor', 'genial', 'great', 'excellent', 'amazing', 'love']
-        neg_words = ['malo', 'horrible', 'terrible', 'odio', 'pésimo', 'bad', 'awful', 'hate', 'worst']
+        pos_words = ['excelente', 'bueno', 'perfecto', 'amor', 'genial', 'fantastic', 'great', 'excellent', 'amazing', 'love', 'wonderful']
+        neg_words = ['malo', 'horrible', 'terrible', 'odio', 'pésimo', 'awful', 'bad', 'hate', 'worst', 'disgusting']
         
         pos_count = sum(1 for word in pos_words if word in text_lower)
         neg_count = sum(1 for word in neg_words if word in text_lower)
@@ -91,25 +99,31 @@ else:
             return {"label": "NEU", "score": 0.6}
 
     def classify_category(text: str) -> dict:
+        """Clasificador de categoría LITE usando palabras clave"""
         if not text: return {"label": "General/Otro", "score": 0.5}
         text_lower = text.lower()
         
-        if any(word in text_lower for word in ['login', 'contraseña', 'error', 'problema', 'no funciona']):
+        # Soporte Técnico
+        if any(word in text_lower for word in ['login', 'contraseña', 'error', 'problema', 'no funciona', 'falla', 'bug']):
             return {"label": "Soporte Técnico", "score": 0.8}
-        elif any(word in text_lower for word in ['envío', 'entrega', 'delivery', 'llegó']):
+        # Logística/Envíos
+        elif any(word in text_lower for word in ['envío', 'entrega', 'delivery', 'llegó', 'repartidor', 'shipping']):
             return {"label": "Logística/Envíos", "score": 0.8}
-        elif any(word in text_lower for word in ['factura', 'pago', 'cobro', 'dinero', 'precio']):
+        # Facturación y Pagos
+        elif any(word in text_lower for word in ['factura', 'pago', 'cobro', 'dinero', 'precio', 'billing', 'payment']):
             return {"label": "Facturación y Pagos", "score": 0.8}
-        elif any(word in text_lower for word in ['producto', 'calidad', 'sugerencia', 'mejora']):
+        # Producto/Sugerencias
+        elif any(word in text_lower for word in ['producto', 'calidad', 'sugerencia', 'mejora', 'feature', 'quality']):
             return {"label": "Producto/Sugerencias", "score": 0.8}
         else:
             return {"label": "General/Otro", "score": 0.6}
 
     def classify_urgency(text: str) -> str:
+        """Clasificador de urgencia LITE usando palabras clave"""
         if not text: return "Normal"
         text_lower = text.lower()
         
-        urgent_words = ['urgente', 'emergency', 'inmediato', 'ya', 'ahora', 'grave']
+        urgent_words = ['urgente', 'emergency', 'inmediato', 'ya', 'ahora', 'grave', 'critical', 'asap']
         return "Alta" if any(word in text_lower for word in urgent_words) else "Normal"
     
     print("[ML_Pipeline] ✅ Especialistas LITE cargados correctamente")
