@@ -1,3 +1,4 @@
+# Feedback-Classifier/ml_models/categoria.py
 from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer
 import os
 import torch
@@ -24,6 +25,7 @@ print("[ML_Category] Cargando especialista de categoría...")
 # ✅ CONFIGURACIÓN DESDE SETTINGS
 USE_HUGGINGFACE_API = settings.USE_HUGGINGFACE_API
 HF_CATEGORY_MODEL = settings.HF_CATEGORY_MODEL
+HF_TOKEN = settings.HF_TOKEN  # 👈 AGREGAR ESTA LÍNEA
 BACKBLAZE_URL = settings.BACKBLAZE_MODEL_URL
 FORCE_CPU = settings.FORCE_CPU
 MAX_LENGTH = settings.MAX_TEXT_LENGTH
@@ -118,13 +120,27 @@ def load_category_models():
         
         if download_success:
             print(f"[ML_Category] Cargando modelo local desde: {MODEL_PATH_CATEGORY}")
+            
+            # 👈 AGREGAR AUTENTICACIÓN SI ES NECESARIO
+            model_kwargs = {
+                "torch_dtype": torch.int8 if FORCE_CPU else torch.float16,
+                "device_map": "cpu" if FORCE_CPU else "auto",
+                "low_cpu_mem_usage": True
+            }
+            
+            if HF_TOKEN:
+                model_kwargs["use_auth_token"] = HF_TOKEN
+            
             model = AutoModelForSequenceClassification.from_pretrained(
                 MODEL_PATH_CATEGORY,
-                torch_dtype=torch.int8 if FORCE_CPU else torch.float16,
-                device_map="cpu" if FORCE_CPU else "auto",
-                low_cpu_mem_usage=True
+                **model_kwargs
             )
-            tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH_CATEGORY)
+            
+            tokenizer_kwargs = {}
+            if HF_TOKEN:
+                tokenizer_kwargs["use_auth_token"] = HF_TOKEN
+                
+            tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH_CATEGORY, **tokenizer_kwargs)
 
             CATEGORY_CLASSIFIER = pipeline(
                 task="text-classification",
@@ -144,14 +160,20 @@ def load_category_models():
     try:
         print(f"[ML_Category] Cargando modelo HF: {HF_CATEGORY_MODEL}")
         
+        # 👈 CONFIGURAR AUTENTICACIÓN PARA TU MODELO
+        model_kwargs = {
+            "low_cpu_mem_usage": True,
+            "torch_dtype": torch.float16 if not FORCE_CPU else torch.float32
+        }
+        
+        if HF_TOKEN:
+            model_kwargs["use_auth_token"] = HF_TOKEN
+        
         CATEGORY_CLASSIFIER_HF = pipeline(
             task="zero-shot-classification",
             model=HF_CATEGORY_MODEL,
             device=-1 if FORCE_CPU else 0,
-            model_kwargs={
-                "low_cpu_mem_usage": True,
-                "torch_dtype": torch.float16 if not FORCE_CPU else torch.float32
-            }
+            model_kwargs=model_kwargs
         )
         
         # Prueba
@@ -273,7 +295,7 @@ def mock_category_classification(text: str) -> dict:
         score = sum(1 for word in words if word in text_lower)
         scores[category] = score
     
-    # ✅ DETERMINAR LA MEJOR CATEGORÍA
+
     if all(score == 0 for score in scores.values()):
         return {"label": "General/Otro", "score": 0.5, "source": "mock_default"}
     
