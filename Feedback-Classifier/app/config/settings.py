@@ -1,4 +1,3 @@
-# app/config/settings.py
 from pydantic_settings import BaseSettings
 from typing import Optional
 
@@ -18,13 +17,13 @@ class Settings(BaseSettings):
     MAX_TEXT_LENGTH: int = 512
     ENABLE_QUANTIZATION: bool = True
     
-    # ✅ MODELOS HUGGING FACE
-    HF_SENTIMENT_MODEL: str = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+    # ✅ MODELOS HUGGING FACE - ACTUALIZADOS CON TU MODELO
+    HF_SENTIMENT_MODEL: str = "foxbell/Feedback-Sentiment-Classifier"  # 👈 TU MODELO
     HF_CATEGORY_MODEL: str = "facebook/bart-large-mnli"
     
-    # ✅ CONFIGURACIONES AVANZADAS
+    # ✅ CONFIGURACIONES AVANZADAS - TOKEN AGREGADO
     HF_CACHE_DIR: Optional[str] = None
-    HF_TOKEN: Optional[str] = None
+    HF_TOKEN: Optional[str] = "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"  # 👈 TU TOKEN
     MODEL_BATCH_SIZE: int = 1
     MODEL_TIMEOUT: int = 30
     
