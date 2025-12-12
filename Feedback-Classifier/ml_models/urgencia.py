@@ -150,7 +150,7 @@ def classify_urgency(text: str) -> str:
     elif alta_matches >= 1:
         logger.info(f"[ML_Urgency] Keywords: ALTA (1 match crítico)")
         return "alta"
-        elif media_matches >= 2:
+    elif media_matches >= 2:
         logger.info(f"[ML_Urgency] Keywords: MEDIA ({media_matches} matches)")
         return "media"
     elif media_matches >= 1:
@@ -229,7 +229,7 @@ def test_urgency_classifier():
             if is_correct:
                 correct_predictions += 1
                 
-                       logger.info(f"[ML_Urgency] Caso {i}/{total_tests} {status}")
+            logger.info(f"[ML_Urgency] Caso {i}/{total_tests} {status}")
             logger.info(f"  Texto: '{text[:50]}...'")
             logger.info(f"  Esperado: {expected} | Obtenido: {predicted}")
             
@@ -302,7 +302,7 @@ if __name__ == "__main__":
             
             # Mostrar resultado con colores/emojis
             emoji_map = {
-                "alta": "🔴 
+                "alta": "🔴 ",
                 "media": "🟡 MEDIA", 
                 "baja": "🟢 BAJA"
             }

@@ -1,3 +1,4 @@
+#feedback-classifier/limpieza_codespaces.sh
 #!/bin/bash
 echo "🚨 LIMPIEZA COMPLETA DE CODESPACES (<5% ESPACIO)"
 

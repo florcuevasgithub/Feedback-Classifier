@@ -1,3 +1,4 @@
+# feedback-classifier/entrypoint.sh
 #!/bin/bash
 set -e
 
